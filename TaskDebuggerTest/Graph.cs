@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace TaskDebuggerTest
 {
     public class Graph<T>
     {
-        public HashSet<Vertex> Vertices = new HashSet<Vertex>(new VertexComparer());
-        public HashSet<Edge> Edges = new HashSet<Edge>(new EdgeComparer());
+        public HashSet<Vertex> Vertices = new HashSet<Vertex>();
+        public HashSet<Edge> Edges = new HashSet<Edge>();
         public List<AdjacencyList> AdjacencyLists = new List<AdjacencyList>();
 
         public Vertex AddVertex(T value)
@@ -18,8 +19,6 @@ namespace TaskDebuggerTest
 
             return newVertex;
         }
-
-        public bool HasVertex(int id) => Vertices.Any(curVertex => curVertex.Id == id);
 
         public Vertex FindVertex(int id) => Vertices.First(vertex => vertex.Id == id);
 
@@ -33,7 +32,7 @@ namespace TaskDebuggerTest
             Edges.Add(new Edge(fromVertex, toVertex));
             
             var fromVertexAdjacencyList = FindVertexAdjacencyList(fromVertex.Id);
-            fromVertexAdjacencyList.Add(toVertex);
+            fromVertexAdjacencyList.Value.Add(toVertex);
 
             return true;
         }
@@ -45,19 +44,28 @@ namespace TaskDebuggerTest
             if (fromVertex == null || toVertex == null)
                 return;
 
-            Edges.Remove(new Edge(fromVertex, toVertex));
+            Edges.RemoveWhere(edge => edge.FromVertex.Id == fromVertexId && edge.ToVertex.Id == toVertexId);
+            
             var adjList = FindVertexAdjacencyList(fromVertexId);
-            adjList.Remove(FindVertex(toVertexId));
+            adjList.Value.RemoveAll(vertex => vertex.Id == toVertexId);
         }
 
-        public AdjacencyList FindVertexAdjacencyList(int id) => AdjacencyLists.Find(adjList => adjList.RootVertex.Id == id);
+        public AdjacencyList FindVertexAdjacencyList(int id) => AdjacencyLists.Find(adj => adj.RootVertex.Id == id);
 
         public Graph<T> Clone()
         {
-            var clonedGraph = this;
-            clonedGraph.Vertices = new HashSet<Vertex>(this.Vertices);
-            clonedGraph.Edges = new HashSet<Edge>(this.Edges);
-            clonedGraph.AdjacencyLists = new List<AdjacencyList>(this.AdjacencyLists);
+            var clonedGraph = new Graph<T>
+            {
+                Vertices = new HashSet<Vertex>(this.Vertices),
+                Edges = new HashSet<Edge>(this.Edges),
+                AdjacencyLists = new List<AdjacencyList>(this.AdjacencyLists.Capacity)
+            };
+
+            for (var i = 0; i < this.AdjacencyLists.Count; i++)
+            {
+                clonedGraph.AdjacencyLists.Add(new AdjacencyList(this.AdjacencyLists[i].RootVertex));
+                clonedGraph.AdjacencyLists[i].Value = new List<Vertex>(this.AdjacencyLists[i].Value);
+            }
 
             return clonedGraph;
         }
@@ -66,7 +74,11 @@ namespace TaskDebuggerTest
         {
             var transposedGraph = graph.Clone();
             transposedGraph.Edges = new HashSet<Edge>();
-            transposedGraph.AdjacencyLists = new List<AdjacencyList>();
+
+            foreach (var adjList in transposedGraph.AdjacencyLists)
+            {
+                adjList.Value = new List<Vertex>();
+            }
             
             foreach (var edge in graph.Edges)
             {
@@ -82,7 +94,7 @@ namespace TaskDebuggerTest
             
             AdjacencyLists.ForEach(adjList =>
             {
-                if (adjList.Count == 0) leaves.Add(adjList.RootVertex);
+                if (adjList.Value.Count == 0) leaves.Add(adjList.RootVertex);
             });
 
             return leaves;
@@ -100,26 +112,10 @@ namespace TaskDebuggerTest
             }
         }
 
-        public class VertexComparer : IEqualityComparer<Vertex>
-        {
-            public bool Equals(Vertex vertex1, Vertex vertex2)
-            {
-                if (vertex1 == null && vertex2 == null) return true;
-                if (vertex1 == null || vertex2 == null) return false;
-                return vertex1.Id == vertex2.Id;
-            }
-
-            public int GetHashCode(Vertex vertex)
-            {
-                var code = vertex.Id + "|" + vertex.Value;
-                return code.GetHashCode();
-            }
-        }
-
         public class Edge
         {
-            public Vertex FromVertex;
-            public Vertex ToVertex;
+            public readonly Vertex FromVertex;
+            public readonly Vertex ToVertex;
             
             public Edge(Vertex fromVertex, Vertex toVertex)
             {
@@ -128,26 +124,10 @@ namespace TaskDebuggerTest
             }
         }
 
-        public class EdgeComparer : IEqualityComparer<Edge>
+        public class AdjacencyList
         {
-            public bool Equals(Edge edge1, Edge edge2)
-            {
-                if (edge1 == null && edge2 == null) return true;
-                if (edge1 == null || edge2 == null) return false;
-                return edge1.FromVertex.Id == edge2.FromVertex.Id && edge1.ToVertex.Id == edge2.ToVertex.Id;
-            }
-
-            public int GetHashCode(Edge edge)
-            {
-                var code = edge.FromVertex.Id + "|" + edge.FromVertex.Value + "," + edge.ToVertex.Id + "|" +
-                           edge.ToVertex.Value;
-                return code.GetHashCode();
-            }
-        }
-        
-        public class AdjacencyList : List<Vertex>
-        {
-            public Vertex RootVertex;
+            public readonly Vertex RootVertex;
+            public List<Vertex> Value = new List<Vertex>(); 
 
             public AdjacencyList(Vertex rootVertex)
             {
