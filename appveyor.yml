@@ -1,0 +1,11 @@
+image: Visual Studio 2017
+
+environment:
+    matrix:
+     - solution_name: TaskDebuggerTest/TaskDebuggerTest.sln    
+      
+  before_build:
+    - cmd: nuget restore TaskDebuggerTest/TaskDebuggerTest.sln
+  
+  build_script:
+    - msbuild TaskDebuggerTest/TaskDebuggerTest.sln
