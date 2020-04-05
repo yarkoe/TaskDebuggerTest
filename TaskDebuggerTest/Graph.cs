@@ -70,6 +70,40 @@ namespace TaskDebuggerTest
             return clonedGraph;
         }
 
+        public bool HasCycle()
+        {
+            var vertexColor = Vertices.ToDictionary<Vertex, int, byte>(vertex => vertex.Id, vertex => 0);
+
+            foreach (var vertex in Vertices)
+                if (vertexColor[vertex.Id] == 0)
+                {
+                    if (DepthCycleSearch(vertex, vertexColor))
+                    {
+                        return true;
+                    }
+                }
+
+            return false;
+        }
+
+        private bool DepthCycleSearch(Vertex vertex, IDictionary<int, byte> vertexColor)
+        {
+            vertexColor[vertex.Id] = 1;
+
+            foreach (var curVertex in FindVertexAdjacencyList(vertex.Id).Value)
+            {
+                if (vertexColor[curVertex.Id] == 1)
+                    return true;
+
+                if (DepthCycleSearch(curVertex, vertexColor))
+                    return true;
+            }
+
+            vertexColor[vertex.Id] = 2;
+
+            return false;
+        }
+
         public static Graph<T> TransposeGraph(Graph<T> graph)
         {
             var transposedGraph = graph.Clone();
