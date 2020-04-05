@@ -6,12 +6,21 @@ using System.Threading.Tasks;
 
 namespace TaskDebuggerTest
 {
+    /// <summary>
+    /// Класс, позволяющий распараллелить граф событий.
+    /// </summary>
     public static class GraphParallelProcessor
     {
         private static readonly MyTaskScheduler _taskScheduler = new MyTaskScheduler(); 
         
         private static readonly object _lockObject = new object();
         
+        /// <summary>
+        /// Распараллелить граф событий.
+        /// </summary>
+        /// <param name="actions">Граф событий.</param>
+        /// <returns>Возвращаемая задача.</returns>
+        /// <exception cref="Exception">Исключение происходит, если передан граф с циклом.</exception>
         public static Task ProcessInParallelAsync(Graph<Action> actions)
         {
             if (actions.HasCycle())
@@ -28,6 +37,13 @@ namespace TaskDebuggerTest
             return Task.WhenAll(initialTasks);
         }
 
+        /// <summary>
+        /// Исполнить текущее событие вершины и запустить новые при возможности.
+        /// </summary>
+        /// <param name="actions">Граф событий.</param>
+        /// <param name="transposedActions">Транспонированный граф событий.</param>
+        /// <param name="vertex">Рассматриваемая вершина.</param>
+        /// <returns>Возвращаемая задача</returns>
         private static async Task ProcessVertexInParallelAsync(Graph<Action> actions, Graph<Action> transposedActions, Graph<Action>.Vertex vertex)
         {
             var actionTask = Task.Factory.StartNew(() => vertex.Value(), 

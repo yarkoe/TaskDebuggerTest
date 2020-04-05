@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace TaskDebuggerTest
 {
+    /// <summary>
+    /// Реализация Task Scheduler.
+    /// </summary>
     public class MyTaskScheduler : TaskScheduler, IDisposable
     {
         private const int ThreadNumber = 20;
@@ -29,6 +32,9 @@ namespace TaskDebuggerTest
 
         public void Dispose() => _threadPool.Shutdown();
 
+        /// <summary>
+        /// Класс реализует поведение пула потоков.
+        /// </summary>
         private class MyThreadPool
         {
             private readonly object _lockObject = new object();
@@ -47,6 +53,11 @@ namespace TaskDebuggerTest
 
             private readonly MyTaskScheduler _myTaskScheduler;
             
+            /// <summary>
+            /// Инициализирует и запускает фиксированное количество потоков.
+            /// </summary>
+            /// <param name="n">Количество запускаемых потоков.</param>
+            /// <<param name="taskScheduler">Экземпляр MyTaskScheduler, который использует текущий пул потоков.</param>
             public MyThreadPool(int n, MyTaskScheduler taskScheduler)
             {
                 _myTaskScheduler = taskScheduler;
@@ -69,11 +80,19 @@ namespace TaskDebuggerTest
                 }
             }
             
+            /// <summary>
+            /// Добавляет задачу в очередь.
+            /// </summary>
+            /// <param name="task">Задача, которую необходимо поставить в очередь.</param>
             public void AddTask(Task task)
             {
                 AddToQueue(task);
             }
             
+            /// <summary>
+            /// Метод, позволяющий добавить задачу в очередь пула потоков.
+            /// </summary>
+            /// <param name="task">Задачу, которую необходимо добавить в очередь.</param>
             private void AddToQueue(Task task)
             {
                 lock (_eventLockObject)
@@ -84,6 +103,11 @@ namespace TaskDebuggerTest
                 }
             }
             
+            /// <summary>
+            /// Метод, который исполняется в каждом потоке.
+            /// Позволяет каждому потоку обработать функцию task'а.
+            /// Завершается при запросе cancellation token.
+            /// </summary>
             private void Run()
             {
                 while (true)
@@ -129,6 +153,9 @@ namespace TaskDebuggerTest
                 }
             }
 
+            /// <summary>
+            /// Закрыть пул потоков.
+            /// </summary>
             public void Shutdown()
             {
                 _cts.Cancel();
