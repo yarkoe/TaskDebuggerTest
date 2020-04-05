@@ -40,6 +40,7 @@
     <ItemGroup>
         <Compile Include="Graph.cs" />
         <Compile Include="GraphParallelProcessor.cs" />
+        <Compile Include="MyTaskScheduler.cs" />
         <Compile Include="Program.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
